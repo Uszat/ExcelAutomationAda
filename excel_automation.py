@@ -9,6 +9,7 @@ OFFSET_TO_START_FROM_ONE = 1 #starts from 0 but I want to start from 1
 OFFSET_TO_CALC_NO_PPL = 1 #people in sheet actually start from 2nd pos
 MIN_DAYS_TO_MATCH = 1 #minimum number of days that have to match to pair up people
 MIN_SPORTS_TO_MATCH = 1 #minimum number of sports that have to match to pair up people
+NUMBER_OF_UNMATCHED_PEOPLE = 2
 
 
 #specify the files location (or path)
@@ -48,6 +49,7 @@ noOfEntries = worksheet.max_row - OFFSET_TO_CALC_NO_PPL
 wbAssigned = Workbook()
 wsAssigned =  wbAssigned.active
 
+nie = 'Nie - dołączam z własnym Fitness Buddy'
 
 #create a class of people
 class Person(object):
@@ -151,7 +153,7 @@ def matchPeopleBySport(iter):
 
     for person in people:
         try:
-            person.sportSplit = person.discipline.split(sep=",")  # separate every comma and put values into a list
+            person.sportSplit = person.discipline.split(sep=",")  # separate every comma and put values into a list [Kosz, siatka, yoga] -> [[kosz], [siatka], [yoga]]
             person.sportSplit = [item.strip() for item in person.sportSplit] #strip it from whitespaces
         except AttributeError:
             print("ERROR")
@@ -219,18 +221,20 @@ def matchPeopleBySport(iter):
 # matchedBySport list only operates on name and surname [['Mateusz Krzak']] instead of objects (which contain all data about a person)
 # So find matching name between list matchedBySport and person.name and add this object person to the list objectMatchedBySport
 def fillObjectList():
-    
-    newPair = True
-    for idx, person in enumerate(people):
-        for group in matchedBySport:
-            if person.name in group:
-                if newPair == True:
-                    objectsMatchedBySport.append([person]) # appending to add a new index of the list
-                    newPair = False
-                else:
-                    objectsMatchedBySport[int(idx/2)].extend([person]) #extend to add another item to the list in certain index (so that the list consists of sublists with pairs). idx/2 cause you extend every second person and int() is just to take whole value
-                    newPair = True
 
+    newPair = True
+    index = 0
+    for group in matchedBySport:
+        for name in group:
+            for person in people:
+                if person.name == name:
+                    if newPair == True:
+                        objectsMatchedBySport.append([person]) # appending to add a new index of the list
+                        newPair = False
+                    else:
+                        objectsMatchedBySport[index].extend([person]) #extend to add another item to the list in certain index (so that the list consists of sublists with pairs). idx/2 cause you extend every second person and int() is just to take whole value
+                        newPair = True
+                        index += 1
 
 #inserting people's all data into cells
 def putPeopleInCell():
@@ -293,7 +297,7 @@ if __name__ == "__main__":
     putPeopleWithPairToGroup()
     removeUsedPersonFromList()
     iter = 0
-    while matchPeopleBySport(iter) >= 2 and iter < noOfSports: #do as many shuffles as there are sports to find the best possible assignment
+    while matchPeopleBySport(iter) >= NUMBER_OF_UNMATCHED_PEOPLE and iter < noOfSports: #do as many shuffles as there are sports to find the best possible assignment
         iter+=1
     fillObjectList()
 
